@@ -354,6 +354,11 @@
 @property (copy, nonatomic) void (^reachabilityChangedHandler)(NetworkStatus ns);
 
 /*!
+ * @abstract returns the current reachability status
+ */
+@property (readonly, nonatomic) NetworkStatus currentReachabilityStatus;
+
+/*!
  *  @abstract Registers an associated operation subclass
  *  
  *  @discussion

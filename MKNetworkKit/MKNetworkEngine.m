@@ -235,6 +235,10 @@ static NSOperationQueue *_sharedNetworkQueue;
   }
 }
 
+- (NetworkStatus)currentReachabilityStatus {
+  return self.reachability.currentReachabilityStatus;
+}
+
 #pragma mark Freezing operations (Called when network connectivity fails)
 -(void) freezeOperations {
   
@@ -491,24 +495,22 @@ static NSOperationQueue *_sharedNetworkQueue;
         NSUInteger index = [operations indexOfObject:operation];
         BOOL operationFinished = NO;
         if(index != NSNotFound) {
-          
-          MKNetworkOperation *queuedOperation = (MKNetworkOperation*) (operations)[index];
-          operationFinished = [queuedOperation isFinished];
-          if(!operationFinished) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-              [queuedOperation updateHandlersFromOperation:operation];
-            });
+          @try {
+            MKNetworkOperation *queuedOperation = (MKNetworkOperation*) (operations)[index];
+            operationFinished = [queuedOperation isFinished];
+            if(!operationFinished) [queuedOperation updateHandlersFromOperation:operation];
+          } @catch (NSException *exc) {
+            NSLog(@"MKNetworkKit exception %@", exc);
+            operationFinished = YES;
           }
         }
-        
         if(expiryTimeInSeconds <= 0 || forceReload || operationFinished)
           [_sharedNetworkQueue addOperation:operation];
         // else don't do anything
       });
       
     } else {
-      
-      [_sharedNetworkQueue addOperation:operation];
+      dispatch_sync(self.operationQueue, ^{ [_sharedNetworkQueue addOperation:operation]; });
     }
     
     if([self.reachability currentReachabilityStatus] == NotReachable)

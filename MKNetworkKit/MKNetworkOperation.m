@@ -1206,8 +1206,11 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,        // 5
     
     if([contentType rangeOfString:@"image"].location != NSNotFound) {
       
-      // For images let's assume a expiry date of 7 days
-      expiresOnDate = [[NSDate date] dateByAddingTimeInterval:kMKNetworkKitDefaultImageCacheDuration];
+      // For images let's assume a expiry date of 7 days if there is no eTag or Last Modified.
+      if(!eTag && !lastModified)
+        expiresOnDate = [[NSDate date] dateByAddingTimeInterval:kMKNetworkKitDefaultImageCacheDuration];
+      else    
+        expiresOnDate = [[NSDate date] dateByAddingTimeInterval:kMKNetworkKitDefaultImageHeadRequestDuration];
     }
     
     NSString *cacheControl = httpHeaders[@"Cache-Control"]; // max-age, must-revalidate, no-cache
