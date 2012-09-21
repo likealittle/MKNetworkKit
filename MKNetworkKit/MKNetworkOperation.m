@@ -89,6 +89,9 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
 
 @property (strong, nonatomic) NSError *error;
 
+@property (nonatomic, strong) NSMutableArray *dependentOperations;
+
+
 - (instancetype)initWithURLString:(NSString *)aURLString
                  params:(NSDictionary *)body
              httpMethod:(NSString *)method;
@@ -534,6 +537,9 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
   [self.uploadProgressChangedHandlers addObjectsFromArray:operation.uploadProgressChangedHandlers];
   [self.downloadProgressChangedHandlers addObjectsFromArray:operation.downloadProgressChangedHandlers];
   [self.downloadStreams addObjectsFromArray:operation.downloadStreams];
+
+  if (!self.dependentOperations) self.dependentOperations = [NSMutableArray array];
+  [self.dependentOperations addObject:operation];
 }
 
 -(void) setCachedData:(NSData*) cachedData {
