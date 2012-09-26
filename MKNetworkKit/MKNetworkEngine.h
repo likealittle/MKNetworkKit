@@ -343,6 +343,17 @@
 @property (copy, nonatomic) NSString* apiPath;
 
 /*!
+ *  @abstract Cache Directory In Memory Cost
+ *
+ *  @discussion
+ *	This method can be over-ridden by subclasses to provide an alternative in memory cache size.
+ *  By default, MKNetworkKit caches 10 recent requests in memory
+ *  The default size is 10
+ *  Overriding this method is optional
+ */
+@property (nonatomic) int cacheMemoryCost;
+
+/*!
  *  @abstract Handler that you implement to monitor reachability changes
  *  @property reachabilityChangedHandler
  *  
@@ -377,17 +388,6 @@
  *  Overriding this method is optional
  */
 -(NSString*) cacheDirectoryName;
-
-/*!
- *  @abstract Cache Directory In Memory Cost
- *  
- *  @discussion
- *	This method can be over-ridden by subclasses to provide an alternative in memory cache size.
- *  By default, MKNetworkKit caches 10 recent requests in memory
- *  The default size is 10
- *  Overriding this method is optional
- */
--(int) cacheMemoryCost;
 
 /*!
  *  @abstract Enable Caching

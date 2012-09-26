@@ -47,6 +47,10 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
                                  CFStringRef keyPassword);
 
 @interface MKNetworkOperation (/*Private Methods*/)
+{
+  NSString *_uniqueIdentifier;
+}
+
 @property (strong, nonatomic) NSURLConnection *connection;
 @property (copy, nonatomic) NSString *uniqueId;
 @property (strong, nonatomic) NSMutableURLRequest *request;
@@ -255,6 +259,8 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
   
   if(_freezable && self.uniqueId == nil)
     self.uniqueId = [NSString uniqueString];
+    
+  _uniqueIdentifier = nil;
 }
 
 
@@ -277,6 +283,7 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
 }
 
 -(NSString*) uniqueIdentifier {
+  if (_uniqueIdentifier) return _uniqueIdentifier;
   
   NSMutableString *str = [NSMutableString stringWithFormat:@"%@ %@", self.request.HTTPMethod, self.url];
   
@@ -291,7 +298,9 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
     
     [str appendString:self.uniqueId];
   }
-  return [str md5];
+  
+  _uniqueIdentifier = [str md5];
+  return _uniqueIdentifier;
 }
 
 -(BOOL) isCachedResponse {
@@ -540,12 +549,6 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
 
   if (!self.dependentOperations) self.dependentOperations = [NSMutableArray array];
   [self.dependentOperations addObject:operation];
-}
-
--(void) setCachedData:(NSData*) cachedData {
-  
-  self.cachedResponse = cachedData;
-  [self operationSucceeded];
 }
 
 -(void) updateOperationBasedOnPreviousHeaders:(NSMutableDictionary*) headers {
@@ -1380,6 +1383,16 @@ totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite {
 
 #pragma mark -
 #pragma mark Our methods to get data
+
+-(id) memoryCacheObject {
+  
+  return [self responseData];
+}
+
+-(void) setMemoryCacheObject:(id)memoryCacheObject {
+  
+  self.cachedResponse = memoryCacheObject;
+}
 
 -(NSData*) responseData {
   

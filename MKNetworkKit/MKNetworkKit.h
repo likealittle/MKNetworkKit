@@ -81,7 +81,6 @@
 #import "MKNetworkEngine.h"
 
 #define kMKNetworkEngineOperationCountChanged @"kMKNetworkEngineOperationCountChanged"
-#define MKNETWORKCACHE_DEFAULT_COST 100
 #define MKNETWORKCACHE_DEFAULT_DIRECTORY @"MKNetworkKitCache"
 #define kMKNetworkKitDefaultCacheDuration 60 // 1 minute
 #define kMKNetworkKitDefaultImageHeadRequestDuration 3600*24*7 // 1 day (HEAD requests with eTag are sent only after expiry of this. Not that these are not RFC compliant, but needed for performance tuning)

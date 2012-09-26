@@ -412,21 +412,25 @@ static NSOperationQueue *_sharedNetworkQueue;
   [operation addHeaders:self.customHeaders];
 }
 
--(NSData*) cachedDataForOperation:(MKNetworkOperation*) operation {
+-(BOOL) hasCachedDataForOperation:(MKNetworkOperation*) operation {
   
-  NSData *cachedData = (self.memoryCache)[[operation uniqueIdentifier]];
-  if(cachedData) return cachedData;
+  id cachedObject = [self.memoryCache objectForKey:[operation uniqueIdentifier]];
+  if (cachedObject) {
+    operation.memoryCacheObject = cachedObject;
+    return YES;
+  }
   
   NSString *filePath = [[self cacheDirectoryName] stringByAppendingPathComponent:[operation uniqueIdentifier]];
   
   if([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
     
-    cachedData = [NSData dataWithContentsOfFile:filePath];
-    [self saveCacheData:cachedData forKey:[operation uniqueIdentifier]]; // bring it back to the in-memory cache
-    return cachedData;
+    NSData *cachedData = [NSData dataWithContentsOfFile:filePath];
+    [operation setCachedResponse:cachedData];
+    [self updateMemoryCacheForOperation:operation]; // bring it back to the in-memory cache
+    return YES;
   }
   
-  return nil;
+  return NO;
 }
 
 -(void) enqueueOperation:(MKNetworkOperation*) operation {
@@ -442,29 +446,31 @@ static NSOperationQueue *_sharedNetworkQueue;
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     
     
-     __weak id weakSelf = self;
+     __weak MKNetworkEngine * weakSelf = self;
     
     
     [operation setCacheHandler:^(MKNetworkOperation* completedCacheableOperation) {
       
       // if this is not called, the request would have been a non cacheable request
       //completedCacheableOperation.cacheHeaders;
+      [weakSelf updateMemoryCacheForOperation:completedCacheableOperation];
       NSString *uniqueId = [completedCacheableOperation uniqueIdentifier];
-      [weakSelf saveCacheData:[completedCacheableOperation responseData]
-                   forKey:uniqueId];
-      
-      ([weakSelf cacheInvalidationParams])[uniqueId] = completedCacheableOperation.cacheHeaders;
+      NSData *data = [completedCacheableOperation responseData];
+      dispatch_async(weakSelf.backgroundCacheQueue, ^{
+        NSString *filePath = [[weakSelf cacheDirectoryName] stringByAppendingPathComponent:completedCacheableOperation.uniqueID];
+        [data writeToFile:filePath atomically:YES];
+      });
+      (weakSelf.cacheInvalidationParams)[uniqueId] = completedCacheableOperation.cacheHeaders;
     }];
     
     __block double expiryTimeInSeconds = 0.0f;
     
     if([operation isCacheable]) {
-      
-      NSData *cachedData = [self cachedDataForOperation:operation];
-      if(cachedData) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-          // Jump back to the original thread here since setCachedData updates the main thread
-          [operation setCachedData:cachedData];
+
+      if([self hasCachedDataForOperation:operation]) {
+        // Jump back to the original thread here
+        dispatch_async(originalQueue, ^{
+          [operation operationSucceeded];
         });
         
         if(!forceReload) {
@@ -615,26 +621,7 @@ static NSOperationQueue *_sharedNetworkQueue;
   return cacheDirectoryName;
 }
 
--(int) cacheMemoryCost {
-  
-  return MKNETWORKCACHE_DEFAULT_COST;
-}
-
--(void) saveCache {
-  
-  for(NSString *cacheKey in [self.memoryCache allKeys])
-  {
-    NSString *filePath = [[self cacheDirectoryName] stringByAppendingPathComponent:cacheKey];
-    if([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
-      
-      NSError *error = nil;
-      [[NSFileManager defaultManager] removeItemAtPath:filePath error:&error];
-      ELog(error);
-    }
-    
-    [(self.memoryCache)[cacheKey] writeToFile:filePath atomically:YES];
-  }
-  
+-(void) emptyMemoryCache {
   [self.memoryCache removeAllObjects];
   [self.memoryCacheKeys removeAllObjects];
   
@@ -642,34 +629,21 @@ static NSOperationQueue *_sharedNetworkQueue;
   [self.cacheInvalidationParams writeToFile:cacheInvalidationPlistFilePath atomically:YES];
 }
 
--(void) saveCacheData:(NSData*) data forKey:(NSString*) cacheDataKey
+-(void) updateMemoryCacheForOperation:(MKNetworkOperation *) operation
 {
-  dispatch_async(self.backgroundCacheQueue, ^{
+  @synchronized(self) {
+    [self.memoryCache setObject:operation.memoryCacheObject forKey:operation.uniqueIdentifier];
     
-    (self.memoryCache)[cacheDataKey] = data;
-    
-    NSUInteger index = [self.memoryCacheKeys indexOfObject:cacheDataKey];
+    NSUInteger index = [self.memoryCacheKeys indexOfObject:operation.uniqueIdentifier];
     if(index != NSNotFound)
       [self.memoryCacheKeys removeObjectAtIndex:index];
     
-    [self.memoryCacheKeys insertObject:cacheDataKey atIndex:0]; // remove it and insert it at start
+    [self.memoryCacheKeys insertObject:operation.uniqueIdentifier atIndex:0]; // remove it and insert it at start
     
     if([self.memoryCacheKeys count] >= (NSUInteger)[self cacheMemoryCost])
     {
-      NSString *lastKey = [self.memoryCacheKeys lastObject];
-      NSData *data2 = (self.memoryCache)[lastKey];
-      NSString *filePath = [[self cacheDirectoryName] stringByAppendingPathComponent:lastKey];
-      
-      if([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
-        
-        NSError *error = nil;
-        [[NSFileManager defaultManager] removeItemAtPath:filePath error:&error];
-        ELog(error);
-      }
-      [data2 writeToFile:filePath atomically:YES];
-      
+      [self.memoryCache removeObjectForKey:[self.memoryCacheKeys lastObject]];
       [self.memoryCacheKeys removeLastObject];
-      [self.memoryCache removeObjectForKey:lastKey];
     }
   });
 }
@@ -695,6 +669,7 @@ static NSOperationQueue *_sharedNetworkQueue;
   self.memoryCache = [NSMutableDictionary dictionaryWithCapacity:[self cacheMemoryCost]];
   self.memoryCacheKeys = [NSMutableArray arrayWithCapacity:[self cacheMemoryCost]];
   self.cacheInvalidationParams = [NSMutableDictionary dictionary];
+  if (!self.cacheMemoryCost) self.cacheMemoryCost = 10;
   
   NSString *cacheDirectory = [self cacheDirectoryName];
   BOOL isDirectory = YES;
@@ -715,26 +690,26 @@ static NSOperationQueue *_sharedNetworkQueue;
     self.cacheInvalidationParams = [NSMutableDictionary dictionaryWithContentsOfFile:cacheInvalidationPlistFilePath];
   }
   
-#if TARGET_OS_IPHONE
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveCache)
+#if TARGET_OS_IPHONE        
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(emptyMemoryCache)
                                                name:UIApplicationDidReceiveMemoryWarningNotification
                                              object:nil];
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveCache)
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(emptyMemoryCache)
                                                name:UIApplicationDidEnterBackgroundNotification
                                              object:nil];
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveCache)
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(emptyMemoryCache)
                                                name:UIApplicationWillTerminateNotification
                                              object:nil];
   
 #elif TARGET_OS_MAC
   
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveCache)
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(emptyMemoryCache)
                                                name:NSApplicationWillHideNotification
                                              object:nil];
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveCache)
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(emptyMemoryCache)
                                                name:NSApplicationWillResignActiveNotification
                                              object:nil];
-  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveCache)
+  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(emptyMemoryCache)
                                                name:NSApplicationWillTerminateNotification
                                              object:nil];
   
@@ -745,7 +720,7 @@ static NSOperationQueue *_sharedNetworkQueue;
 
 -(void) emptyCache {
   
-  [self saveCache]; // ensures that invalidation params are written to disk properly
+  [self emptyMemoryCache]; // ensures that invalidation params are written to disk properly
   NSError *error = nil;
   NSArray *directoryContents = [[NSFileManager defaultManager]
                                 contentsOfDirectoryAtPath:[self cacheDirectoryName] error:&error];

@@ -90,6 +90,15 @@ typedef enum {
 @property (nonatomic, copy, readonly) NSString *url;
 
 /*!
+ *  @abstract Request memoryCacheObject Property
+ *  @property memoryCacheObject
+ *
+ *  @discussion
+ *	Refers to the operation's memoryCacheObject (object that should be saved in memory cache)
+ */
+@property (nonatomic, assign) id memoryCacheObject;
+
+/*!
  *  @abstract The internal request object
  *  @property readonlyRequest
  *  
@@ -680,7 +689,7 @@ typedef enum {
 // internal methods called by MKNetworkEngine only.
 // Don't touch
 -(BOOL) isCacheable;
--(void) setCachedData:(NSData*) cachedData;
+-(void) setCachedResponse:(NSData*) cachedData;
 -(void) setCacheHandler:(MKNKResponseBlock) cacheHandler;
 -(void) updateHandlersFromOperation:(MKNetworkOperation*) operation;
 -(void) updateOperationBasedOnPreviousHeaders:(NSMutableDictionary*) headers;
