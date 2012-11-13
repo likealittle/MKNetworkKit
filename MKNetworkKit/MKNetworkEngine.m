@@ -413,10 +413,12 @@ static NSOperationQueue *_sharedNetworkQueue;
 
 -(BOOL) hasCachedDataForOperation:(MKNetworkOperation*) operation {
   
-  id cachedObject = [self.memoryCache objectForKey:[operation uniqueIdentifier]];
-  if (cachedObject) {
-    operation.memoryCacheObject = cachedObject;
-    return YES;
+  @synchronized(self) {
+    id cachedObject = [self.memoryCache objectForKey:[operation uniqueIdentifier]];
+    if (cachedObject) {
+      operation.memoryCacheObject = cachedObject;
+      return YES;
+    }
   }
   
   NSString *filePath = [[self cacheDirectoryName] stringByAppendingPathComponent:[operation uniqueIdentifier]];
@@ -621,23 +623,29 @@ static NSOperationQueue *_sharedNetworkQueue;
 }
 
 -(void) emptyMemoryCache {
-  [self.memoryCache removeAllObjects];
-  [self.memoryCacheKeys removeAllObjects];
-  
+  @synchronized(self) {
+    [self.memoryCache removeAllObjects];
+    [self.memoryCacheKeys removeAllObjects];
+  }
+
   NSString *cacheInvalidationPlistFilePath = [[self cacheDirectoryName] stringByAppendingPathExtension:@"plist"];
   [self.cacheInvalidationParams writeToFile:cacheInvalidationPlistFilePath atomically:YES];
 }
 
 -(void) updateMemoryCacheForOperation:(MKNetworkOperation *) operation
 {
+  NSString *uniqueId = operation.uniqueIdentifier;
+  id obj = operation.memoryCacheObject;
+  if (!obj) return;
+  
   @synchronized(self) {
-    [self.memoryCache setObject:operation.memoryCacheObject forKey:operation.uniqueIdentifier];
+    [self.memoryCache setObject:obj forKey:uniqueId];
     
-    NSUInteger index = [self.memoryCacheKeys indexOfObject:operation.uniqueIdentifier];
+    NSUInteger index = [self.memoryCacheKeys indexOfObject:uniqueId];
     if(index != NSNotFound)
       [self.memoryCacheKeys removeObjectAtIndex:index];
     
-    [self.memoryCacheKeys insertObject:operation.uniqueIdentifier atIndex:0]; // remove it and insert it at start
+    [self.memoryCacheKeys insertObject:uniqueId atIndex:0]; // remove it and insert it at start
     
     if([self.memoryCacheKeys count] >= (NSUInteger)[self cacheMemoryCost])
     {
