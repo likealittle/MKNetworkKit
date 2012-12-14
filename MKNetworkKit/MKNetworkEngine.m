@@ -186,12 +186,13 @@ static NSOperationQueue *_sharedNetworkQueue;
                          change:(NSDictionary *)change context:(void *)context
 {
   if (object == _sharedNetworkQueue && [keyPath isEqualToString:@"operationCount"]) {
+    int count = [_sharedNetworkQueue operationCount];
+    
 #if TARGET_OS_IPHONE
-    [UIApplication sharedApplication].networkActivityIndicatorVisible =
-    ([_sharedNetworkQueue.operations count] > 0);
+    [UIApplication sharedApplication].networkActivityIndicatorVisible = (count > 0);
 #endif
       
-    [[NSNotificationCenter defaultCenter] postNotificationName:kMKNetworkEngineOperationCountChanged object:[NSNumber numberWithInteger:[_sharedNetworkQueue operationCount]]];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kMKNetworkEngineOperationCountChanged object:@(count)];
   }
   else {
     [super observeValueForKeyPath:keyPath ofObject:object
@@ -241,10 +242,9 @@ static NSOperationQueue *_sharedNetworkQueue;
 #pragma mark Freezing operations (Called when network connectivity fails)
 -(void) freezeOperations {
   
-  if(![self isCacheEnabled]) return;
+  if(self.dontFreeze || ![self isCacheEnabled]) return;
   
   for(MKNetworkOperation *operation in _sharedNetworkQueue.operations) {
-    
     // freeze only freeable operations.
     if(![operation freezable]) continue;
     
@@ -458,7 +458,7 @@ static NSOperationQueue *_sharedNetworkQueue;
       NSString *uniqueId = [completedCacheableOperation uniqueIdentifier];
       NSData *data = [completedCacheableOperation responseData];
       dispatch_async(weakSelf.backgroundCacheQueue, ^{
-        NSString *filePath = [[weakSelf cacheDirectoryName] stringByAppendingPathComponent:completedCacheableOperation.uniqueID];
+        NSString *filePath = [[weakSelf cacheDirectoryName] stringByAppendingPathComponent:uniqueId];
         [data writeToFile:filePath atomically:YES];
       });
       (weakSelf.cacheInvalidationParams)[uniqueId] = completedCacheableOperation.cacheHeaders;
@@ -470,8 +470,8 @@ static NSOperationQueue *_sharedNetworkQueue;
 
       if([self hasCachedDataForOperation:operation]) {
         // Jump back to the original thread here
-        dispatch_async(originalQueue, ^{
-          [operation operationSucceeded];
+        dispatch_async(dispatch_get_main_queue(), ^{
+          @autoreleasepool { [operation operationSucceeded]; }
         });
         
         if(!forceReload) {
@@ -483,10 +483,10 @@ static NSOperationQueue *_sharedNetworkQueue;
           if(savedCacheHeaders) {
             NSString *expiresOn = savedCacheHeaders[@"Expires"];
             
-            dispatch_sync(self.operationQueue, ^{
+            dispatch_sync(self.operationQueue, ^{ @autoreleasepool {
               NSDate *expiresOnDate = [NSDate dateFromRFC1123:expiresOn];
               expiryTimeInSeconds = [expiresOnDate timeIntervalSinceNow];
-            });
+            } });
             
             dispatch_async(dispatch_get_main_queue(), ^{
               
@@ -496,8 +496,7 @@ static NSOperationQueue *_sharedNetworkQueue;
         }
       }
       
-      dispatch_sync(self.operationQueue, ^{
-        
+      dispatch_sync(self.operationQueue, ^{ @autoreleasepool {
         NSArray *operations = _sharedNetworkQueue.operations;
         NSUInteger index = [operations indexOfObject:operation];
         BOOL operationFinished = NO;
@@ -514,10 +513,12 @@ static NSOperationQueue *_sharedNetworkQueue;
         if(expiryTimeInSeconds <= 0 || forceReload || operationFinished)
           [_sharedNetworkQueue addOperation:operation];
         // else don't do anything
-      });
+      } });
       
     } else {
-      dispatch_sync(self.operationQueue, ^{ [_sharedNetworkQueue addOperation:operation]; });
+      dispatch_sync(self.operationQueue, ^{
+        @autoreleasepool { [_sharedNetworkQueue addOperation:operation]; }
+      });
     }
     
     if([self.reachability currentReachabilityStatus] == NotReachable)
@@ -652,7 +653,7 @@ static NSOperationQueue *_sharedNetworkQueue;
       [self.memoryCache removeObjectForKey:[self.memoryCacheKeys lastObject]];
       [self.memoryCacheKeys removeLastObject];
     }
-  });
+  }
 }
 
 /*

@@ -427,4 +427,10 @@
  */
 @property (nonatomic, assign) BOOL shouldSendAcceptLanguageHeader;
 
+
+/*!
+ *  @abstract If set, we skip freezing of operations (that is not a reliable path, and one I am not using anyways)
+ */
+@property (nonatomic) BOOL dontFreeze;
+
 @end
