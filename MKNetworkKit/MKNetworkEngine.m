@@ -464,11 +464,8 @@ static NSOperationQueue *_sharedNetworkQueue;
       (weakSelf.cacheInvalidationParams)[uniqueId] = completedCacheableOperation.cacheHeaders;
     }];
     
-    __block double expiryTimeInSeconds = 0.0f;
-    
-    if([operation isCacheable]) {
-
-      if([self hasCachedDataForOperation:operation]) {
+    BOOL executeOperation = forceReload;
+    if([operation isCacheable] && [self hasCachedDataForOperation:operation]) {
         // Jump back to the original thread here
         dispatch_async(dispatch_get_main_queue(), ^{
           @autoreleasepool { [operation operationSucceeded]; }
@@ -482,48 +479,51 @@ static NSOperationQueue *_sharedNetworkQueue;
           // this means, the current operation is a "GET"
           if(savedCacheHeaders) {
             NSString *expiresOn = savedCacheHeaders[@"Expires"];
+            __block double expiryTimeInSeconds = 0.0f;
             
             dispatch_sync(self.operationQueue, ^{ @autoreleasepool {
               NSDate *expiresOnDate = [NSDate dateFromRFC1123:expiresOn];
               expiryTimeInSeconds = [expiresOnDate timeIntervalSinceNow];
             } });
             
-            dispatch_async(dispatch_get_main_queue(), ^{
-              
+            executeOperation = (expiryTimeInSeconds <= 0);
+            if (executeOperation) {
               [operation updateOperationBasedOnPreviousHeaders:savedCacheHeaders];
-            });
+            }
           }
         }
-      }
-      
-      dispatch_sync(self.operationQueue, ^{ @autoreleasepool {
-        NSArray *operations = _sharedNetworkQueue.operations;
-        NSUInteger index = [operations indexOfObject:operation];
-        BOOL operationFinished = NO;
-        if(index != NSNotFound) {
-          @try {
-            MKNetworkOperation *queuedOperation = (MKNetworkOperation*) (operations)[index];
-            operationFinished = [queuedOperation isFinished];
-            if(!operationFinished) [queuedOperation updateHandlersFromOperation:operation];
-          } @catch (NSException *exc) {
-            NSLog(@"MKNetworkKit exception %@", exc);
-            operationFinished = YES;
-          }
-        }
-        if(expiryTimeInSeconds <= 0 || forceReload || operationFinished)
-          [_sharedNetworkQueue addOperation:operation];
-        // else don't do anything
-      } });
-      
-    } else {
-      dispatch_sync(self.operationQueue, ^{
-        @autoreleasepool { [_sharedNetworkQueue addOperation:operation]; }
+    }
+    else {
+      // the operation was not cacheable, so execute it.
+      executeOperation = YES;
+    }
+    
+    if (executeOperation) {
+      dispatch_async(self.operationQueue, ^{
+        @autoreleasepool { [self executeOperation:operation]; }
       });
     }
     
     if([self.reachability currentReachabilityStatus] == NotReachable)
       [self freezeOperations];
   });
+}
+
+-(void) executeOperation:(MKNetworkOperation *)operation {
+  NSArray *operations = _sharedNetworkQueue.operations;
+  NSUInteger index = [operations indexOfObject:operation];
+  if(index != NSNotFound) {
+    @try {
+      MKNetworkOperation *queuedOperation = (MKNetworkOperation*) (operations)[index];
+      if(![queuedOperation isFinished]) {
+        [queuedOperation updateHandlersFromOperation:operation];
+        return;
+      }
+    } @catch (NSException *exc) {
+      NSLog(@"MKNetworkKit exception %@", exc);
+    }
+  }
+  [_sharedNetworkQueue addOperation:operation];
 }
 
 - (MKNetworkOperation*)imageAtURL:(NSURL *)url completionHandler:(MKNKImageBlock) imageFetchedBlock errorHandler:(MKNKResponseErrorBlock) errorBlock {
