@@ -1,5 +1,5 @@
 #import "Kiwi.h"
-#import <OHHTTPStubs/OHHTTPStubs.h>
+#import "OHHTTPStubs.h"
 
 // needed for testing `registerOperationSubclass:`
 @interface MyNetworkOperation : MKNetworkOperation

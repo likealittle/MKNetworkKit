@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		50248E8B1698806900A69EE0 /* MKNetworkOperationSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 50248E8A1698806900A69EE0 /* MKNetworkOperationSpec.m */; };
 		50A5FD0216690C2500BB4A2F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 50A5FD0016690C2500BB4A2F /* InfoPlist.strings */; };
-		50A5FD0B16690C5500BB4A2F /* libMKNetworkKit-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 50A5FD0A16690C5500BB4A2F /* libMKNetworkKit-iOS.a */; };
 		50A5FD0F16690D9700BB4A2F /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50A5FD0E16690D9700BB4A2F /* SenTestingKit.framework */; };
 		50A5FD1116690DA800BB4A2F /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50A5FD1016690DA800BB4A2F /* UIKit.framework */; };
 		50A5FD1316690DAF00BB4A2F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50A5FD1216690DAF00BB4A2F /* Foundation.framework */; };
@@ -19,6 +18,7 @@
 		50A5FF05166918F200BB4A2F /* MKNetworkEngineSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 50A5FF04166918F200BB4A2F /* MKNetworkEngineSpec.m */; };
 		50A5FF0616691B1D00BB4A2F /* libKiwi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 50A5FEFC1669181400BB4A2F /* libKiwi.a */; };
 		50F32A791678EC8F001D6DFE /* libOHHTTPStubs.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 50F32A781678EC6D001D6DFE /* libOHHTTPStubs.a */; };
+		A74111FB169CCE35006CB2AD /* libMKNetworkKit-iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A74111FA169CCE35006CB2AD /* libMKNetworkKit-iOS.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,7 +72,6 @@
 		50A5FCFF16690C2500BB4A2F /* MKNetworkKit-Tests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "MKNetworkKit-Tests-Info.plist"; sourceTree = "<group>"; };
 		50A5FD0116690C2500BB4A2F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		50A5FD0616690C2500BB4A2F /* MKNetworkKit-Tests-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MKNetworkKit-Tests-Prefix.pch"; sourceTree = "<group>"; };
-		50A5FD0A16690C5500BB4A2F /* libMKNetworkKit-iOS.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libMKNetworkKit-iOS.a"; path = "../MKNetworkKit-iOS/build/Release-iphoneos/libMKNetworkKit-iOS.a"; sourceTree = "<group>"; };
 		50A5FD0C16690D7B00BB4A2F /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/System/Library/Frameworks/CoreGraphics.framework; sourceTree = DEVELOPER_DIR; };
 		50A5FD0E16690D9700BB4A2F /* SenTestingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SenTestingKit.framework; path = Library/Frameworks/SenTestingKit.framework; sourceTree = DEVELOPER_DIR; };
 		50A5FD1016690DA800BB4A2F /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/System/Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -83,6 +82,7 @@
 		50A5FEF01669181400BB4A2F /* Kiwi.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Kiwi.xcodeproj; path = Kiwi/Kiwi.xcodeproj; sourceTree = "<group>"; };
 		50A5FF04166918F200BB4A2F /* MKNetworkEngineSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MKNetworkEngineSpec.m; sourceTree = "<group>"; };
 		50F32A701678EC6D001D6DFE /* OHHTTPStubs.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = OHHTTPStubs.xcodeproj; path = OHHTTPStubs/OHHTTPStubs/OHHTTPStubs.xcodeproj; sourceTree = "<group>"; };
+		A74111FA169CCE35006CB2AD /* libMKNetworkKit-iOS.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libMKNetworkKit-iOS.a"; path = "../MKNetworkKit-iOS/build/Debug-iphonesimulator/libMKNetworkKit-iOS.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,7 +98,7 @@
 				50A5FD1316690DAF00BB4A2F /* Foundation.framework in Frameworks */,
 				50A5FD1116690DA800BB4A2F /* UIKit.framework in Frameworks */,
 				50A5FD0F16690D9700BB4A2F /* SenTestingKit.framework in Frameworks */,
-				50A5FD0B16690C5500BB4A2F /* libMKNetworkKit-iOS.a in Frameworks */,
+				A74111FB169CCE35006CB2AD /* libMKNetworkKit-iOS.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -110,7 +110,6 @@
 			children = (
 				50A5FEEE166917E300BB4A2F /* External */,
 				50A5FCF616690C2500BB4A2F /* Frameworks */,
-				50A5FD0A16690C5500BB4A2F /* libMKNetworkKit-iOS.a */,
 				50A5FCFD16690C2500BB4A2F /* MKNetworkKit-Tests */,
 				50A5FCF516690C2500BB4A2F /* Products */,
 			);
@@ -127,6 +126,7 @@
 		50A5FCF616690C2500BB4A2F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A74111FA169CCE35006CB2AD /* libMKNetworkKit-iOS.a */,
 				50A5FD1416690E0500BB4A2F /* CFNetwork.framework */,
 				50A5FD0C16690D7B00BB4A2F /* CoreGraphics.framework */,
 				50A5FD1216690DAF00BB4A2F /* Foundation.framework */,
@@ -380,11 +380,15 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "MKNetworkKit-Tests/MKNetworkKit-Tests-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../MKNetworkKit-iOS/build/Debug-iphonesimulator\"",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				USER_HEADER_SEARCH_PATHS = "$(SOURCE_ROOT)/External/Kiwi/Kiwi";
+				USER_HEADER_SEARCH_PATHS = "$(SOURCE_ROOT)/External/Kiwi/Kiwi $(SOURCE_ROOT)/External/OHHTTPStubs/OHHTTPStubs/";
 				WRAPPER_EXTENSION = octest;
 			};
 			name = Debug;
@@ -411,10 +415,14 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "MKNetworkKit-Tests/MKNetworkKit-Tests-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../MKNetworkKit-iOS/build/Debug-iphonesimulator\"",
+				);
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				USER_HEADER_SEARCH_PATHS = "$(SOURCE_ROOT)/External/Kiwi/Kiwi";
+				USER_HEADER_SEARCH_PATHS = "$(SOURCE_ROOT)/External/Kiwi/Kiwi $(SOURCE_ROOT)/External/OHHTTPStubs/OHHTTPStubs/";
 				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = octest;
 			};
