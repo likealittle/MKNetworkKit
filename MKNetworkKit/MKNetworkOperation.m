@@ -265,14 +265,11 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
 
 
 -(BOOL) isEqual:(id)object {
-  if(object == self)
-    return YES;
-  if(!object || ![object isKindOfClass:[self class]])
-    return NO;
+  if(object == self) return YES;
+  if(!object || ![object isKindOfClass:[self class]]) return NO;
+  
   if([self.request.HTTPMethod isEqualToString:@"GET"] || [self.request.HTTPMethod isEqualToString:@"HEAD"]) {
-    
-    MKNetworkOperation *anotherObject = (MKNetworkOperation*) object;
-    return ([[self uniqueIdentifier] isEqualToString:[anotherObject uniqueIdentifier]]);
+    return ([[self uniqueIdentifier] isEqualToString:[object uniqueIdentifier]]);
   }
   
   return NO;
@@ -537,8 +534,9 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
   _connection = nil;
 }
 
--(void) updateHandlersFromOperation:(MKNetworkOperation*) operation {
-  
+-(BOOL) updateHandlersFromOperation:(MKNetworkOperation*) operation {
+  if (self.isFinished) return NO;
+
   [self.responseBlocks addObjectsFromArray:operation.responseBlocks];
   [self.errorBlocks addObjectsFromArray:operation.errorBlocks];
   [self.errorBlocksType2 addObjectsFromArray:operation.errorBlocksType2];
@@ -549,6 +547,7 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
 
   if (!self.dependentOperations) self.dependentOperations = [NSMutableArray array];
   [self.dependentOperations addObject:operation];
+  return YES;
 }
 
 -(void) updateOperationBasedOnPreviousHeaders:(NSMutableDictionary*) headers {
@@ -638,6 +637,7 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
     self.downloadStreams = [NSMutableArray array];
     
     self.credentialPersistence = NSURLCredentialPersistenceForSession;
+    self.shouldCacheResponseEvenIfProtocolIsHTTPS = YES;
     
     NSURL *finalURL = nil;
     
@@ -977,12 +977,11 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
   return (self.state == MKNetworkOperationStateExecuting);
 }
 
--(void) cancel {
-  
+- (void)cancelOnMainThread
+{
   if([self isFinished])
     return;
   
-  @synchronized(self) {
     self.isCancelled = YES;
     
     [self.connection cancel];
@@ -1022,8 +1021,12 @@ OSStatus extractIdentityAndTrust(CFDataRef inPKCS12Data,
     // if the operation is not removed, the spinner continues to spin, not a good UX
     
     [self endBackgroundTask];
-  }
+    
   [super cancel];
+}
+
+-(void) cancel {
+  [self performSelectorOnMainThread:@selector(cancelOnMainThread) withObject:nil waitUntilDone:YES];
 }
 
 #pragma mark -
@@ -1344,7 +1347,7 @@ totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite {
   for(NSOutputStream *stream in self.downloadStreams)
     [stream close];
   
-  if (self.response.statusCode >= 200 && self.response.statusCode < 300 && ![self isCancelled]) {
+  if (self.response.statusCode >= 200 && self.response.statusCode < 300) {
     
     self.cachedResponse = nil; // remove cached data
 
@@ -1410,7 +1413,7 @@ totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite {
 }
 
 -(NSString*) responseStringWithEncoding:(NSStringEncoding) encoding {
-  
+  if([self responseData] == nil) return nil;
   return [[NSString alloc] initWithData:[self responseData] encoding:encoding];
 }
 

@@ -510,17 +510,13 @@ static NSOperationQueue *_sharedNetworkQueue;
 }
 
 -(void) executeOperation:(MKNetworkOperation *)operation {
-  NSArray *operations = _sharedNetworkQueue.operations;
-  NSUInteger index = [operations indexOfObject:operation];
-  if(index != NSNotFound) {
-    @try {
-      MKNetworkOperation *queuedOperation = (MKNetworkOperation*) (operations)[index];
-      if(![queuedOperation isFinished]) {
-        [queuedOperation updateHandlersFromOperation:operation];
-        return;
-      }
-    } @catch (NSException *exc) {
-      NSLog(@"MKNetworkKit exception %@", exc);
+  for (MKNetworkOperation *op in [_sharedNetworkQueue.operations copy]) {
+    if ([op isEqual:operation]) {
+        __block BOOL res;
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            res = [op updateHandlersFromOperation:operation];
+        });
+        if (res) return;
     }
   }
   [_sharedNetworkQueue addOperation:operation];

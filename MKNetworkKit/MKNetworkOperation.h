@@ -225,7 +225,7 @@ typedef enum {
  *
  *  @discussion
  *	If you set this property to YES, the operation's data will be cached even if the source is secure (HTTPS)
- *  The default value is NO. MKNetworkKit will not cache responses from secure servers
+ *  The default value is YES. MKNetworkKit will cache responses from secure servers
  */
 @property (nonatomic, assign) BOOL shouldCacheResponseEvenIfProtocolIsHTTPS;
 
@@ -691,7 +691,7 @@ typedef enum {
 -(BOOL) isCacheable;
 -(void) setCachedResponse:(NSData*) cachedData;
 -(void) setCacheHandler:(MKNKResponseBlock) cacheHandler;
--(void) updateHandlersFromOperation:(MKNetworkOperation*) operation;
+-(BOOL) updateHandlersFromOperation:(MKNetworkOperation*) operation;
 -(void) updateOperationBasedOnPreviousHeaders:(NSMutableDictionary*) headers;
 -(NSString*) uniqueIdentifier;
 
